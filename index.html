@@ -223,11 +223,10 @@ fit &lt;- lm(mpg ~ wt + cyl, dat)
 coef(fit)
 </code></pre>
 
-<pre lang="r,"><code>plot(dat$mpg ~ dat$wt, col = dat$cyl)
-abline(a = coef(fit)[1], b = coef(fit)[2])
-abline(a = coef(fit)[1] + coef(fit)[3], b = coef(fit)[2], col = "red")
-abline(a = coef(fit)[1] + coef(fit)[4], b = coef(fit)[2], col = "green")
-</code></pre>
+<div class="highlight highlight-r"><pre>plot(<span class="pl-smi">dat</span><span class="pl-k">$</span><span class="pl-smi">mpg</span> <span class="pl-k">~</span> <span class="pl-smi">dat</span><span class="pl-k">$</span><span class="pl-smi">wt</span>, <span class="pl-v">col</span> <span class="pl-k">=</span> <span class="pl-smi">dat</span><span class="pl-k">$</span><span class="pl-smi">cyl</span>)
+abline(<span class="pl-v">a</span> <span class="pl-k">=</span> coef(<span class="pl-smi">fit</span>)[<span class="pl-c1">1</span>], <span class="pl-v">b</span> <span class="pl-k">=</span> coef(<span class="pl-smi">fit</span>)[<span class="pl-c1">2</span>])
+abline(<span class="pl-v">a</span> <span class="pl-k">=</span> coef(<span class="pl-smi">fit</span>)[<span class="pl-c1">1</span>] <span class="pl-k">+</span> coef(<span class="pl-smi">fit</span>)[<span class="pl-c1">3</span>], <span class="pl-v">b</span> <span class="pl-k">=</span> coef(<span class="pl-smi">fit</span>)[<span class="pl-c1">2</span>], <span class="pl-v">col</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>red<span class="pl-pds">"</span></span>)
+abline(<span class="pl-v">a</span> <span class="pl-k">=</span> coef(<span class="pl-smi">fit</span>)[<span class="pl-c1">1</span>] <span class="pl-k">+</span> coef(<span class="pl-smi">fit</span>)[<span class="pl-c1">4</span>], <span class="pl-v">b</span> <span class="pl-k">=</span> coef(<span class="pl-smi">fit</span>)[<span class="pl-c1">2</span>], <span class="pl-v">col</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>green<span class="pl-pds">"</span></span>)</pre></div>
 
 <h2>
 <a id="residuals--diagnostics-1" class="anchor" href="#residuals--diagnostics-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Residuals &amp; Diagnostics</h2>
