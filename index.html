@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Regressionmodelscourseproject by Aadityauppal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Regressionmodelscourseproject</h1>
+      <h2 class="project-tagline"></h2>
+      <a href="https://github.com/Aadityauppal/RegressionModelsCourseProject" class="btn">View on GitHub</a>
+      <a href="https://github.com/Aadityauppal/RegressionModelsCourseProject/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/Aadityauppal/RegressionModelsCourseProject/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h2>
+<a id="executive-summary" class="anchor" href="#executive-summary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Executive Summary:</h2>
+
+<ul>
+<li><em>While looking for a fuel economic automobile, Manual transmission should be the vehicle of choice.</em></li>
+<li><em>The difference in mileage of cars is attributed to the weight and no. of cylinders in the car.</em></li>
+<li><em>Based on the observed data, mileage of Automatic transmission cars is about 7 miles per gallon (on average) less than Manual transmission cars.</em></li>
+<li><em>For every half a ton (~1000lbs) increase in the vehicle weight, there is a 3.21 mpg drop in the mileage.</em></li>
+<li><em>Mileage drops as we go for cars with more cylinders: For a 1-ton car, mileage goes down from 27.6 to 23.3 to 21.5 for 4, 6 and 8 cylinders respectively.</em></li>
+</ul>
+
+<pre lang="r,"><code>data(mtcars)
+dat &lt;- mtcars
+str(dat)
+head(dat)
+names(dat)
+unique(dat$drat)
+unique(dat$vs)
+unique(dat$gear)
+unique(dat$carb)
+sum(dat$am == "Automatic")
+sum(dat$am == "Manual")
+table(dat$vs)
+</code></pre>
+
+<pre lang="r,"><code>dat$cyl &lt;- factor(dat$cyl)
+dat$vs &lt;- factor(dat$vs, labels = c("V", "S"))
+dat$am &lt;- factor(dat$am, labels = c("Automatic", "Manual"))
+dat$gear &lt;- factor(dat$gear)
+dat$carb &lt;- factor(dat$carb)
+</code></pre>
+
+<h2>
+<a id="exploratory-analysis" class="anchor" href="#exploratory-analysis" aria-hidden="true"><span class="octicon octicon-link"></span></a>Exploratory analysis:</h2>
+
+<p>We look at some plots first to understand how the data is distributed. The boxplot shows that at least for the second quartiles, mileage for Automatic transmission cars is always lower than the Manual transmission cars. Even the average mileage values confirm that. </p>
+
+<p>Assuming the data for both transmissions follow a T-distribution, we do a T-test for our Null hypothesis that mileage in the two cases is different and higher for manual transmission. Our T-test results also suggest that but we should also look at the effect of other parameters before making any conclusions.</p>
+
+<pre lang="r,"><code>library(ggplot2)
+library(grid)
+library(gridExtra)
+boxplot(dat$mpg ~ dat$am, main = "Mileage for both transmissions", ylab = "Miles per Gallon (mpg)", xlab = "Transmission type", col = c("light blue", "sienna"))
+mM &lt;- round(mean(dat$mpg[grep("Manual", dat$am)]), 2)
+mA &lt;- round(mean(dat$mpg[grep("Automatic", dat$am)]), 2)
+print(paste("Average mileage for Automatic transmission:", mA, "(mpg)", collapse = ""))
+print(paste("Average mileage for Manual transmission:", mM, "(mpg)", collapse = ""))
+#sd(dat$mpg[grep("Manual", dat$am)])
+#sd(dat$mpg[grep("Automatic", dat$am)])
+t.test(dat$mpg[grep("Manual", dat$am)] - dat$mpg[grep("Automatic", dat$am)])$estimate
+t.test(dat$mpg[grep("Manual", dat$am)] - dat$mpg[grep("Automatic", dat$am)])$conf.int
+p &lt;- ggplot(dat, aes(wt, mpg)) + geom_point(aes(color = am), size = 2) 
+p1 &lt;- ggplot(dat, aes(cyl, mpg)) + geom_point(aes(color = am), size = 2)
+p2 &lt;- ggplot(dat, aes(disp, mpg)) + geom_point(aes(color = am), size = 2)
+p3 &lt;- ggplot(dat, aes(hp, mpg)) + geom_point(aes(color = am), size = 2) 
+p4 &lt;- ggplot(dat, aes(drat, mpg)) + geom_point(aes(color = am), size = 2) 
+p5 &lt;- ggplot(dat, aes(qsec, mpg)) + geom_point(aes(color = am), size = 2) 
+p6 &lt;- ggplot(dat, aes(vs, mpg)) + geom_point(aes(color = am), size = 2) 
+p7 &lt;- ggplot(dat, aes(gear, mpg)) + geom_point(aes(color = am), size = 2)
+p8 &lt;- ggplot(dat, aes(carb, mpg)) + geom_point(aes(color = am), size = 2)
+grid.arrange(p, p1, p2, p3, p4, p5, p6, p7, p8, ncol = 2)
+</code></pre>
+
+<h2>
+<a id="regression-modeling" class="anchor" href="#regression-modeling" aria-hidden="true"><span class="octicon octicon-link"></span></a>Regression modeling</h2>
+
+<p>We first analyse the correlation of <em>mileage</em> with other parameters. </p>
+
+<pre lang="r,"><code>library(dplyr)
+cordat &lt;- c()
+for(i in 2:ncol(mtcars)) {
+  v1 &lt;- mtcars$mpg
+  v2 &lt;- mtcars[, i]
+  cordat[i-1] &lt;- cor(v1, v2) 
+}
+names(cordat) &lt;- names(select(dat, -1))
+rank(cordat)
+</code></pre>
+
+<p>Let us build and analyse some models using predictors that have a high correlation with our outcome (mpg).</p>
+
+<pre lang="r,"><code>fit1 &lt;- lm(mpg ~ wt, mtcars)
+fit2 &lt;- lm(mpg ~ wt + cyl, mtcars)
+fit3 &lt;- lm(mpg ~ wt + cyl + disp, mtcars)
+fit4 &lt;- lm(mpg ~ wt + cyl + disp + hp, mtcars)
+fit5 &lt;- lm(mpg ~ wt + cyl + disp + hp + carb, mtcars)
+</code></pre>
+
+<p>We analyse the standard errors, P-values (of predictors) and R-squared (%age of total variation explained by the model) values from the summary of these models (fits). We observe that the standard errors are increasing as more predictors are added. The P-values are also not significant beyond the <strong>weight and cylinders</strong> predictors. R-squared values on the other hand are constantly increasing which can be attributed to the addition of predictors. But if we observe the adjusted R-squared values, it dips beyond the adition of two predictors. Another observation is that as the <strong>horsepower</strong> predictor is added, standard error for the <strong>weight</strong> predictor actually reduces. The adjusted R-squared also increases again with the <strong>horsepower</strong> predictor. We add the same predictors once more but in a different order.</p>
+
+<pre lang="r,"><code>fit1a &lt;- lm(mpg ~ wt, mtcars)
+fit2a &lt;- lm(mpg ~ wt + cyl, mtcars)
+fit3a &lt;- lm(mpg ~ wt + cyl + hp, mtcars)
+fit4a &lt;- lm(mpg ~ wt + cyl + hp + disp, mtcars)
+fit5a &lt;- lm(mpg ~ wt + cyl + hp + disp + carb, mtcars)
+</code></pre>
+
+<p>We again observe that the standard errors are increasing rapidly as more predictors are added. The P-values are significant only till the <strong>weight and cylinders</strong> predictors are included. R-squared values do not increase much beyond those two predictors. Adjusted R-squared values show a decline after three predictors. </p>
+
+<p>So now we select these three predictors - <strong>weight, cylinders and horsepower</strong>, for further analysis.</p>
+
+<p>We conduct an <em>Analysis of Variance (ANOVA or nested likelyhood ratio)</em> test to study the suitability of these fits. The P-values indicate that the 3rd model does not add much significance to the prior models. These observations indicate that selecting <strong>weight and cylinders</strong> as predictors should give a suitable fit.</p>
+
+<pre lang="r,"><code>anova(fit1a, fit2a, fit3a)
+fit &lt;- lm(mpg ~ wt + cyl, dat)
+coef(fit)
+</code></pre>
+
+<p>We look at the coefficients of our selected model now and try to plot the fit on top of the obeserved data.</p>
+
+<pre lang="r,"><code>plot(dat$mpg ~ dat$wt, col = dat$cyl)
+abline(a = coef(fit)[1], b = coef(fit)[2])
+abline(a = coef(fit)[1] + coef(fit)[3], b = coef(fit)[2], col = "red")
+abline(a = coef(fit)[1] + coef(fit)[4], b = coef(fit)[2], col = "green")
+</code></pre>
+
+<p>We do <strong>observe a good fit of our model on the recorded data</strong>. But let us look at some residuals and diagnostic methods before making final conclusions.</p>
+
+<h2>
+<a id="residuals--diagnostics" class="anchor" href="#residuals--diagnostics" aria-hidden="true"><span class="octicon octicon-link"></span></a>Residuals &amp; Diagnostics</h2>
+
+<pre lang="r,"><code>par(mfrow = c(2, 2))
+plot(fit, which = 1)
+plot(fit, which = 2)
+plot(fit, which = 3)
+plot(fit, which = 5)
+</code></pre>
+
+<p>Let us first look at some residuals plots. We do not observe any pattern in the residuals compared against the fitted values. The residuals also seem to have a normal distribution in the theoretical quantiles. We also do not spot any high residuals as a result of high influence (leverage) points. Finally, let us look at some influence measures for our selected model.</p>
+
+<pre lang="r,"><code>(max(hatvalues(fit)) - mean(hatvalues(fit)))/mean(hatvalues(fit))
+max(abs(dffits(fit)))/mean(predict(fit))
+mean(abs(dfbetas(fit)[, 2]))/abs(coef(fit)[2])
+max(cooks.distance(fit))
+</code></pre>
+
+<p><strong>The most influential point has a hatvalue less than twice the mean hatvalues. The maximum change in predicted response is less than 5% of the mean predicted values. The mean change in the weight coefficient values is only about 3% of the predicted coefficient. The overall change in the coefficients is only about 0.23</strong> <em>Our residuals and diagnostic tests do suggest that our model is a good fit</em>.</p>
+
+<h2>
+<a id="conclusions--inference" class="anchor" href="#conclusions--inference" aria-hidden="true"><span class="octicon octicon-link"></span></a>Conclusions &amp; Inference</h2>
+
+<pre lang="r,"><code>summary(fit)
+</code></pre>
+
+<p>Let us look at our model once again. It contains two predictors: one continuous (weight) and the other discrete (no. of cylinders), a factor variable. <em>For a 4-cylinder car with a given weight, our model predicts a linear fit with slope -3.206 and an intercept of 33.99; For a 6 or 8-cylinder car, our model predicts a linear fit with same slope but intercepts of 29.74 and 27.92 respectively.</em> So our model predicts:</p>
+
+<pre lang="r,"><code>mpg4cyl &lt;- round(coef(fit)[1] + 2 * coef(fit)[2], 2)
+mpg6cyl &lt;- round(coef(fit)[1] + coef(fit)[3] + 2 * coef(fit)[2], 2)
+mpg8cyl &lt;- round(coef(fit)[1] + coef(fit)[4] + 2 * coef(fit)[2], 2)
+print(paste("Mileage for a 1-ton (~2000lbs) 4-cylinder car:", mpg4cyl, "mpg", collapse = ""))
+print(paste("Mileage for a 1-ton 6-cylinder car:", mpg6cyl, "mpg", collapse = ""))
+print(paste("Mileage for a 1-ton 8-cylinder car:", mpg8cyl, "mpg", collapse = ""))
+</code></pre>
+
+<p>In conclusion, <strong>Mileage of cars depend on weight and no. of cylinders. Even though the mileage of Automatic cars is observed to be lower than that of Manual transmission, it can be attributed to those two predictors. Our model does carry some level of uncertainty associated with limited data. More test data can be collected to further develop the model.</strong></p>
+
+<h1>
+<a id="appendix" class="anchor" href="#appendix" aria-hidden="true"><span class="octicon octicon-link"></span></a>Appendix</h1>
+
+<h2>
+<a id="exploratory-analysis-1" class="anchor" href="#exploratory-analysis-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Exploratory analysis:</h2>
+
+<pre lang="r,"><code>boxplot(dat$mpg ~ dat$am, main = "Mileage for both transmissions", ylab = "Miles per Gallon (mpg)", xlab = "Transmission type", col = c("light blue", "sienna"))
+mM &lt;- round(mean(dat$mpg[grep("Manual", dat$am)]), 2)
+mA &lt;- round(mean(dat$mpg[grep("Automatic", dat$am)]), 2)
+print(paste("Average mileage for Automatic transmission:", mA, "(mpg)", collapse = ""))
+print(paste("Average mileage for Manual transmission:", mM, "(mpg)", collapse = ""))
+t.test(dat$mpg[grep("Manual", dat$am)] - dat$mpg[grep("Automatic", dat$am)])$estimate
+t.test(dat$mpg[grep("Manual", dat$am)] - dat$mpg[grep("Automatic", dat$am)])$conf.int
+</code></pre>
+
+<h2>
+<a id="regression-modeling-1" class="anchor" href="#regression-modeling-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Regression modeling</h2>
+
+<pre lang="r,"><code>library(dplyr)
+cordat &lt;- c()
+for(i in 2:ncol(mtcars)) {
+  v1 &lt;- mtcars$mpg
+  v2 &lt;- mtcars[, i]
+  cordat[i-1] &lt;- cor(v1, v2) 
+}
+names(cordat) &lt;- names(select(dat, -1))
+rank(cordat)
+</code></pre>
+
+<pre lang="r,"><code>fit1 &lt;- lm(mpg ~ wt, mtcars)
+fit2 &lt;- lm(mpg ~ wt + cyl, mtcars)
+fit3 &lt;- lm(mpg ~ wt + cyl + disp, mtcars)
+fit4 &lt;- lm(mpg ~ wt + cyl + disp + hp, mtcars)
+fit5 &lt;- lm(mpg ~ wt + cyl + disp + hp + carb, mtcars)
+</code></pre>
+
+<pre lang="r,"><code>fit1a &lt;- lm(mpg ~ wt, mtcars)
+fit2a &lt;- lm(mpg ~ wt + cyl, mtcars)
+fit3a &lt;- lm(mpg ~ wt + cyl + hp, mtcars)
+fit4a &lt;- lm(mpg ~ wt + cyl + hp + disp, mtcars)
+fit5a &lt;- lm(mpg ~ wt + cyl + hp + disp + carb, mtcars)
+</code></pre>
+
+<pre lang="r,"><code>anova(fit1a, fit2a, fit3a)
+fit &lt;- lm(mpg ~ wt + cyl, dat)
+coef(fit)
+</code></pre>
+
+<pre lang="r,"><code>plot(dat$mpg ~ dat$wt, col = dat$cyl)
+abline(a = coef(fit)[1], b = coef(fit)[2])
+abline(a = coef(fit)[1] + coef(fit)[3], b = coef(fit)[2], col = "red")
+abline(a = coef(fit)[1] + coef(fit)[4], b = coef(fit)[2], col = "green")
+</code></pre>
+
+<h2>
+<a id="residuals--diagnostics-1" class="anchor" href="#residuals--diagnostics-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Residuals &amp; Diagnostics</h2>
+
+<pre lang="r,"><code>par(mfrow = c(2, 2))
+plot(fit, which = 1)
+plot(fit, which = 2)
+plot(fit, which = 3)
+plot(fit, which = 5)
+</code></pre>
+
+<pre lang="r,"><code>(max(hatvalues(fit)) - mean(hatvalues(fit)))/mean(hatvalues(fit))
+max(abs(dffits(fit)))/mean(predict(fit))
+mean(abs(dfbetas(fit)[, 2]))/abs(coef(fit)[2])
+max(cooks.distance(fit))
+</code></pre>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/Aadityauppal/RegressionModelsCourseProject">Regressionmodelscourseproject</a> is maintained by <a href="https://github.com/Aadityauppal">Aadityauppal</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
+
